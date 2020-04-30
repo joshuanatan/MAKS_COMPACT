@@ -353,6 +353,7 @@
     function load_delete_content(id){
         var nama_user = $("#nama"+id).text();
         var email_user = $("#email"+id).text();
+        
         $("#id_submit_user_delete").val(id);
         $("#user_name_delete").html(nama_user);
         $("#user_email_delete").html(email_user);
