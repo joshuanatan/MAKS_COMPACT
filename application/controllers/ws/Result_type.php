@@ -4,6 +4,35 @@ class Result_type extends CI_Controller{
         parent::__construct();
         $this->load->library("Page_generator");
     }   
+    public function content(){
+        $respond["status"] = "SUCCESS";
+        $respond["content"] = array();
+
+        $order_by = $this->input->get("orderBy");
+        $order_direction = $this->input->get("orderDirection");
+        $page = $this->input->get("page");
+        $search_key = $this->input->get("searchKey");
+        $data_per_page = 20;
+        
+        $this->load->model("m_result_type");
+        $result = $this->m_result_type->content($page,$order_by,$order_direction,$search_key,$data_per_page);
+
+        if($result["data"]->num_rows() > 0){
+            $result["data"] = $result["data"]->result_array();
+            for($a = 0; $a<count($result["data"]); $a++){
+                $respond["content"][$a]["id"] = $result["data"][$a]["id_submit_result_type"];
+                $respond["content"][$a]["result_type"] = $result["data"][$a]["result_type"];
+                $respond["content"][$a]["status"] = $result["data"][$a]["status_result_type"];
+                $respond["content"][$a]["last_modified"] = $result["data"][$a]["result_type_last_modified"];
+            }
+        }
+        else{
+            $respond["status"] = "ERROR";
+        }
+        $respond["page"] = $this->pagination->generate_pagination_rules($page,$result["total_data"],$data_per_page);
+
+        echo json_encode($respond);
+    }
     public function insert(){
         $response["status"] = "SUCCESS";
         $config = array(
@@ -16,22 +45,22 @@ class Result_type extends CI_Controller{
         $this->form_validation->set_rules($config);
         if($this->form_validation->run()){
             $result_type = strtoupper($this->input->post("result_type"));
+            $id_last_modified = $this->session->id_user;
+
             $this->load->model("m_result_type");
-            $this->m_result_type->set_insert($result_type,"ACTIVE",$this->session->id_user);
-            if($result->num_rows() > 0){
+            if($this->m_result_type->set_insert($result_type,"ACTIVE",$id_last_modified)){
+                if($this->m_result_type->insert()){
+                    $respond["msg"] = "Data is recorded to database";
+                }
+                else{
+                    $respond["status"] = "ERROR";
+                    $respond["msg"] = "Insert function error";
+                }
             }
             else{
-                $data = array(
-                    "result_type" => strtoupper($this->input->post("result_type")),
-                    "status_aktif_result_type" => 1,
-                    "id_user_result_type_last_modified" => $this->session->id_user,
-                    "tgl_result_type_last_modified" => date("Y-m-d H:i:s")
-                );
-                insertRow("tbl_result_type",$data);
-                $msg = "Result is successfully added to database";
-                $this->session->set_flashdata("status_result","success");
-                $this->session->set_flashdata("msg_result",$msg); 
-            }  
+                $respond["status"] = "ERROR";
+                $respond["msg"] = "Setter function error";
+            }
         }
         else{
             $response["status"] = "ERROR";
@@ -39,57 +68,12 @@ class Result_type extends CI_Controller{
         }
         echo json_encode($response);
     }
-    public function activate($result_type){
-        $where = array(
-            "result_type" => rawurldecode($result_type)
-        );
-        $data = array(
-            "status_aktif_result_type" => 1,
-            "id_user_result_type_last_modified" => $this->session->id_user,
-            "tgl_result_type_last_modified" => date("Y-m-d H:i:s")
-        );
-        updateRow("tbl_result_type",$data,$where);
-        $msg = "Data is successfully activated";
-        $this->session->set_flashdata("status_result","success");
-        $this->session->set_flashdata("msg_result",$msg);
-        redirect("result_type");
-    } 
-    public function delete($result_type){
-        $where = array(
-            "result_type" => rawurldecode($result_type)
-        );
-        $data = array(
-            "status_aktif_result_type" => 2,
-            "id_user_result_type_last_modified" => $this->session->id_user,
-            "tgl_result_type_last_modified" => date("Y-m-d H:i:s")
-        );
-        updateRow("tbl_result_type",$data,$where);
-        $msg = "Data is successfully deactivated";
-        $this->session->set_flashdata("status_result","error");
-        $this->session->set_flashdata("msg_result",$msg);
-        redirect("result_type");
-    } 
-    public function deactive($result_type){
-        $where = array(
-            "result_type" => rawurldecode($result_type)
-        );
-        $data = array(
-            "status_aktif_result_type" => 0,
-            "id_user_result_type_last_modified" => $this->session->id_user,
-            "tgl_result_type_last_modified" => date("Y-m-d H:i:s")
-        );
-        updateRow("tbl_result_type",$data,$where);
-        $msg = "Data is successfully deactivated";
-        $this->session->set_flashdata("status_result","error");
-        $this->session->set_flashdata("msg_result",$msg);
-        redirect("result_type");
-    } 
-    
     public function update(){
+        $respond["status"] = "SUCCESS";
         $config = array(
             array(
-                "field" => "result_type_control",
-                "label" => "Result Control",
+                "field" => "id_result_type",
+                "label" => "ID Result Type",
                 "rules" => "required"
             ),
             array(
@@ -100,38 +84,54 @@ class Result_type extends CI_Controller{
         );
         $this->form_validation->set_rules($config);
         if($this->form_validation->run()){
-            $where  = array(
-                "result_type" => strtoupper($this->input->post("result_type"))
-            );
-            $field = array(
-                "result_type"
-            );
-            $result = selectRow("tbl_result_type",$where,$field);
-            if($result->num_rows() > 0){
-                $this->session->set_flashdata("status_result","error");
-                $this->session->set_flashdata("msg_result","Data Exists");
+            $id_result_type = $this->input->post("id_result_type");
+            $result_type = strtoupper($this->input->post("result_type"));
+            $id_last_modified = $this->session->id_user;
+            $this->load->model("m_result_type");
+            if($this->m_result_type->set_update($id_result_type,$result_type,$id_last_modified)){
+                if($this->m_result_type->update()){
+                    $respond["msg"] = "Data is updated";
+                }
+                else{
+                    $respond["status"] = "ERROR";
+                    $respond["msg"] = "Update function error";
+                }
             }
             else{
-                $where = array(
-                    "result_type" => $this->input->post("result_type_control")
-                );
-                $data = array(
-                    "result_type" => strtoupper($this->input->post("result_type")),
-                    "id_user_result_type_last_modified" => $this->session->id_user,
-                    "tgl_result_type_last_modified" => date("Y-m-d H:i:s")
-                );
-                updateRow("tbl_result_type",$data,$where);
-                $msg = "Data is successfully updated to database";
-                $this->session->set_flashdata("status_result","success");
-                $this->session->set_flashdata("msg_result",$msg);
+                $respond["status"] = "ERROR";
+                $respond["msg"] = "Setter function error";
             }
         }
         else{
-            $msg = validation_errors();
-            $this->session->set_flashdata("status_result","error");
-            $this->session->set_flashdata("msg_result",$msg);
+            $respond["status"] = "ERROR";
+            $respond["msg"] = validation_errors();
         }
-        redirect("result_type");
+        echo json_encode($respond);
     }
+    public function delete($id){
+        $respond["status"] = "SUCCESS";
+        if($id != "" && is_numeric($id)){
+            $id_last_modified = $this->session->id_user;
+            $this->load->model("m_result_type");
+            if($this->m_result_type->set_delete($id,$id_last_modified)){
+                if($this->m_result_type->delete()){
+                    $respond["msg"] = "Result type is removed from database";
+                }
+                else{
+                    $respond["status"] = "ERROR";
+                    $respond["msg"] = "Delete function error";
+                }
+            }
+            else{
+                $respond["status"] = "ERROR";
+                $respond["msg"] = "Setter function error";
+            }
+        }
+        else{
+            $respond["status"] = "ERROR";
+            $respond["msg"] = "Invalid ID";
+        }
+        echo json_encode($respond);
+    } 
 }
 ?>

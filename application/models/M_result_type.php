@@ -11,7 +11,7 @@ class M_result_type extends CI_Model{
 
     public function __construct(){
         parent::__construct();
-        $this->id_last_modified = date("Y-m-d H:i:s");
+        $this->result_type_last_modified = date("Y-m-d H:i:s");
         $this->columns = array(
             array(
                 "col_name" => "result_type",
@@ -19,12 +19,12 @@ class M_result_type extends CI_Model{
                 "order_by" => true
             ),
             array(
-                "col_name" => "status_aktif_result_type",
+                "col_name" => "status_result_type",
                 "col_disp" => "Status",
                 "order_by" => false
             ),
             array(
-                "col_name" => "tgl_result_type_last_modified",
+                "col_name" => "result_type_last_modified",
                 "col_disp" => "Last Modified",
                 "order_by" => false
             ),
@@ -39,9 +39,9 @@ class M_result_type extends CI_Model{
         CREATE TABLE mstr_result_type (
             id_submit_result_type INT PRIMARY KEY AUTO_INCREMENT,
             result_type varchar(400),
-            status_aktif_result_type varchar(10),
-            id_user_result_type_last_modified int(11),
-            tgl_result_type_last_modified datetime
+            status_result_type varchar(10),
+            id_last_modified int(11),
+            result_type_last_modified datetime
         );
         DROP TABLE IF EXISTS mstr_result_type_log;
         CREATE TABLE mstr_result_type_log(
@@ -49,9 +49,9 @@ class M_result_type extends CI_Model{
             executed_action VARCHAR(30),
             id_submit_result_type INT,
             result_type varchar(400),
-            status_aktif_result_type varchar(10),
-            id_user_result_type_last_modified int(11),
-            tgl_result_type_last_modified datetime
+            status_result_type varchar(10),
+            id_last_modified int(11),
+            result_type_last_modified datetime
         );
         DROP TRIGGER IF EXISTS TRG_BEFORE_UPDATE;
         DELIMITER $$
@@ -59,7 +59,7 @@ class M_result_type extends CI_Model{
         BEFORE UPDATE ON mstr_result_type
         FOR EACH ROW
         BEGIN 
-            INSERT INTO mstr_result_type_log(executed_action,id_submit_result_type,result_type,status_aktif_result_type,	id_user_result_type_last_modified,tgl_result_type_last_modified) values ('BEFORE UPDATE',OLD.id_submit_result_type,OLD.result_type,OLD.status_aktif_result_type,OLD.id_user_result_type_last_modified,OLD.tgl_result_type_last_modified);
+            INSERT INTO mstr_result_type_log(executed_action,id_submit_result_type,result_type,status_result_type,id_last_modified,result_type_last_modified) values ('BEFORE UPDATE',OLD.id_submit_result_type,OLD.result_type,OLD.status_result_type,OLD.id_last_modified,OLD.result_type_last_modified);
         END$$
         DELIMITER ;
 
@@ -69,39 +69,39 @@ class M_result_type extends CI_Model{
         BEFORE DELETE ON mstr_result_type
         FOR EACH ROW
         BEGIN 
-            INSERT INTO mstr_result_type_log(executed_action,id_submit_result_type,result_type,status_aktif_result_type,id_user_result_type_last_modified,tgl_result_type_last_modified) values ('BEFORE DELETE',OLD.id_submit_result_type,OLD.result_type,OLD.status_aktif_result_type,OLD.id_user_result_type_last_modified,OLD.tgl_result_type_last_modified);
+            INSERT INTO mstr_result_type_log(executed_action,id_submit_result_type,result_type,status_result_type,id_last_modified,result_type_last_modified) values ('BEFORE DELETE',OLD.id_submit_result_type,OLD.result_type,OLD.status_result_type,OLD.id_last_modified,OLD.result_type_last_modified);
         END$$
         DELIMITER ;";
         executeQuery($sql);
     }
     public function content($page = 1,$order_by = 0, $order_direction = "ASC", $search_key = "",$data_per_page = ""){
-        $order_by = $this->column_list[$order_by]["col_name"];
+        $order_by = $this->columns[$order_by]["col_name"];
         $search_query = "";
         if($search_key != ""){
             $search_query .= "AND
             ( 
                 id_submit_result_type LIKE '%".$search_key."%' OR
                 result_type LIKE '%".$search_key."%' OR
-                status_aktif_result_type LIKE '%".$search_key."%' OR
-                id_user_result_type_last_modified LIKE '%".$search_key."%' OR
-                tgl_result_type_last_modified LIKE '%".$search_key."%'
+                status_result_type LIKE '%".$search_key."%' OR
+                id_last_modified LIKE '%".$search_key."%' OR
+                result_type_last_modified LIKE '%".$search_key."%'
             )";
         }
         $query = "
-        SELECT id_submit_result_type,result_type,status_aktif_result_type,id_user_result_type_last_modified,tgl_result_type_last_modified
+        SELECT id_submit_result_type,result_type,status_result_type,id_last_modified,result_type_last_modified
         FROM ".$this->tbl_name." 
-        WHERE (status_aktif_result_type = ? OR status_aktif_result_type = ?)".$search_query."  
+        WHERE (status_result_type = ? OR status_result_type = ?)".$search_query."  
         ORDER BY ".$order_by." ".$order_direction." 
         LIMIT 20 OFFSET ".($page-1)*$data_per_page;
         $args = array(
-            "ACTIVE","NOT ACTIVE",$this->tipe_attr
+            "ACTIVE","NOT ACTIVE"
         );
         $result["data"] = executeQuery($query,$args);
         
         $query = "
         SELECT id_submit_result_type
         FROM ".$this->tbl_name." 
-        WHERE (status_aktif_result_type = ? OR status_aktif_result_type = ?)".$search_query."  
+        WHERE (status_result_type = ? OR status_result_type = ?)".$search_query."  
         ORDER BY ".$order_by." ".$order_direction;
         $result["total_data"] = executeQuery($query,$args)->num_rows();
         return $result;
@@ -111,7 +111,7 @@ class M_result_type extends CI_Model{
             "status_formula_attr" => "ACTIVE"
         );
         $field = array(
-            "result_type","status_aktif_result_type","tgl_result_type_last_modified"
+            "result_type","status_result_type","result_type_last_modified"
         );
         $result = selectRow($this->tbl_name,$where,$field);
         return $result;
@@ -121,7 +121,7 @@ class M_result_type extends CI_Model{
             "status_formula_attr" => "DELETED"
         );
         $field = array(
-            "result_type","status_aktif_result_type","tgl_result_type_last_modified"
+            "result_type","status_result_type","result_type_last_modified"
         );
         $result = selectRow($this->tbl_name,$where,$field);
         return $result;
@@ -147,7 +147,6 @@ class M_result_type extends CI_Model{
             );
             $data = array(
                 "result_type" => $this->result_type,
-                "status_result_type" => $this->status_result_type,
                 "id_last_modified" => $this->id_last_modified,
                 "result_type_last_modified" => $this->result_type_last_modified,
             );
@@ -210,7 +209,7 @@ class M_result_type extends CI_Model{
         }
     }
     public function check_insert_variable(){
-        if($this->result_type != "" && $this->status_result_type != "" && $this->id_last_modified != ""){
+        if($this->result_type != "" && $this->status_result_type != "" && $this->id_last_modified != "" && $this->result_type_last_modified != ""){
             return true;
         }
         else{
@@ -218,7 +217,7 @@ class M_result_type extends CI_Model{
         }
     }
     public function check_update_variable(){
-        if($this->id_submit_result_type != "" && $this->result_type != "" && $this->status_result_type != "" && $this->id_last_modified != ""){
+        if($this->id_submit_result_type != "" && $this->result_type != "" && $this->id_last_modified != "" && $this->result_type_last_modified != ""){
             return true;
         }   
         else{
@@ -226,23 +225,7 @@ class M_result_type extends CI_Model{
         }
     }
     public function check_delete_variable(){
-        if($this->id_submit_result_type != "" && $this->id_last_modified != ""){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-    public function check_deactive_variable(){
-        if($this->id_submit_result_type != "" && $this->id_last_modified != ""){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-    public function check_reactive_variable(){
-        if($this->id_submit_result_type != "" && $this->id_last_modified != ""){
+        if($this->id_submit_result_type != "" && $this->id_last_modified != "" && $this->result_type_last_modified != ""){
             return true;
         }
         else{
@@ -261,14 +244,11 @@ class M_result_type extends CI_Model{
         }
         return true;
     }
-    public function set_update($id_submit_result_type,$result_type,$status_result_type,$id_last_modified){
+    public function set_update($id_submit_result_type,$result_type,$id_last_modified){
         if(!$this->set_id_submit_result_type($id_submit_result_type)){
             return false;
         }
         if(!$this->set_result_type($result_type)){
-            return false;
-        }
-        if(!$this->set_status_result_type($status_result_type)){
             return false;
         }
         if(!$this->set_id_last_modified($id_last_modified)){
@@ -277,15 +257,6 @@ class M_result_type extends CI_Model{
         return true;
     }
     public function set_delete($id_submit_result_type,$id_last_modified){
-        if(!$this->set_id_submit_result_type($id_submit_result_type)){
-            return false;
-        }
-        if(!$this->set_id_last_modified($id_last_modified)){
-            return false;
-        }
-        return true;
-    }
-    public function set_reactive($id_submit_result_type,$id_last_modified){
         if(!$this->set_id_submit_result_type($id_submit_result_type)){
             return false;
         }

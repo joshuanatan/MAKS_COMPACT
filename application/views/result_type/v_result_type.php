@@ -73,28 +73,51 @@
         </div>
     </div>
 </div>
-
 <div class = "modal fade" id = "update_modal">
     <div class = "modal-dialog modal-center">
         <div class = "modal-content">
             <div class = "modal-header">
                 <h4>EDIT RESULT TYPE</h4>
             </div>
-            <form id = "edit_form" method = "POST">
+            <form id = "update_form" method = "POST">
                 <div class = "modal-body">
                     <div class = "form-group">
                         <h5>Result Type Name</h5>
-                        <input type = "hidden" name = "result_type_control" value = "<?php echo $result_type[$a]["result_type"];?>">
-                        <input type = "text" class = "form-control" name = "result_type" value = "<?php echo $result_type[$a]["result_type"];?>">
+                        <input type = "hidden" name = "id_result_type" id = "id_result_type_edit">
+                        <input type = "text" class = "form-control" name = "result_type" id = "result_type_edit">
                     </div>
-                    <button type = "submit" class = "btn btn-primary btn-sm">SUBMIT</button>
+                    <button type = "button" data-dismiss = "modal" class = "btn btn-danger btn-sm">CANCEL</button>
+                    <button type = "button" onclick = "update()" class = "btn btn-primary btn-sm">SUBMIT</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-
+<div class = "modal fade" id = "delete_modal">
+    <div class = "modal-dialog">
+        <div class = "modal-content">
+            <div class = "modal-header">
+                <h4 class = "modal-title">Delete Confirmation</h4>
+            </div>
+            <div class = "modal-body">
+            <input type = "hidden" value = "" id = "id_result_type_delete">
+                <h4 align = "center">Are you sure want to delete this result type?</h4>
+                <table class = "table table-bordered table-striped table-hover">
+                    <tbody>
+                        <tr>
+                            <td>Result Type</td>
+                            <td id = "result_type_delete"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class = "row">
+                    <button type = "button" class = "btn btn-sm btn-primary col-lg-3 col-sm-12 offset-lg-3" data-dismiss = "modal">Cancel</button>
+                    <button type = "button" onclick = "remove()" class = "btn btn-sm btn-danger col-lg-3">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     var orderBy = 0;
     var orderDirection = "ASC";
@@ -103,7 +126,7 @@
     function refresh(req_page = 1) {
         page = req_page;
         $.ajax({
-            url: "<?php echo base_url();?>ws/attribute/list?orderBy="+orderBy+"&orderDirection="+orderDirection+"&page="+page+"&searchKey="+searchKey,
+            url: "<?php echo base_url();?>ws/result_type/content?orderBy="+orderBy+"&orderDirection="+orderDirection+"&page="+page+"&searchKey="+searchKey,
             type: "GET",
             dataType: "JSON",
             success: function(respond) {
@@ -111,12 +134,10 @@
                 if(respond["status"] == "SUCCESS"){
                     for(var a = 0; a<respond["content"].length; a++){
                         html += "<tr>";
-                        html += "<td class = 'align-middle text-center' id = 'name"+a+"'>"+respond["content"][a]["name"]+"</td>";
-                        html += "<td class = 'align-middle text-center' id = 'satuan"+a+"'>"+respond["content"][a]["satuan"]+"</td>";
-                        html += "<td class = 'align-middle text-center' id = 'harga_satuan"+a+"'>"+respond["content"][a]["harga_satuan"]+"</td>";
-                        html += "<td class = 'align-middle text-center' id = 'status"+a+"'>"+respond["content"][a]["status"]+"</td>";
-                        html += "<td class = 'align-middle text-center' id = 'last_modified"+a+"'>"+respond["content"][a]["last_modified"]+"</td>";
-                        html += "<td class = 'align-middle text-center'><i style = 'cursor:pointer;font-size:large' data-toggle = 'modal' class = 'text-primary md-edit' data-target = '#update_modal' onclick = 'load_content("+respond["content"][a]["id"]+")'></i> | <i style = 'cursor:pointer;font-size:large' data-toggle = 'modal' class = 'text-danger md-delete' data-target = '#deleteAttribute' onclick = 'load_delete_content("+respond["content"][a]["id"]+")'></i></td>";
+                        html += "<td class = 'align-middle text-center' id = 'result_type"+respond["content"][a]["id"]+"'>"+respond["content"][a]["result_type"]+"</td>";
+                        html += "<td class = 'align-middle text-center' id = 'status"+respond["content"][a]["id"]+"'>"+respond["content"][a]["status"]+"</td>";
+                        html += "<td class = 'align-middle text-center' id = 'last_modified"+respond["content"][a]["id"]+"'>"+respond["content"][a]["last_modified"]+"</td>";
+                        html += "<td class = 'align-middle text-center'><i style = 'cursor:pointer;font-size:large' data-toggle = 'modal' class = 'text-primary md-edit' data-target = '#update_modal' onclick = 'load_content("+respond["content"][a]["id"]+")'></i> | <i style = 'cursor:pointer;font-size:large' data-toggle = 'modal' class = 'text-danger md-delete' data-target = '#delete_modal' onclick = 'load_delete_content("+respond["content"][a]["id"]+")'></i></td>";
                         html += "</tr>";
                     }
                 }
@@ -209,71 +230,63 @@
         var form = $("#register_form")[0];
         var data = new FormData(form);
         $.ajax({
-            url:"<?php echo base_url();?>ws/result_type/register",
+            url:"<?php echo base_url();?>ws/result_type/insert",
             type:"POST",
             dataType:"JSON",
             data:data,
             processData:false,
             contentType:false,
             success:function(respond){
-                $("#addAttribute").modal("hide");
-                refresh(page);
+                if(respond["status"] == "SUCCESS"){
+                    $("#register_modal").modal("hide");
+                    $("#register_modal input").val("");
+                    refresh(page);
+                }
             }
         });
     }
     function update(){
-        var form = $("#edit_form")[0];
+        var form = $("#update_form")[0];
         var data = new FormData(form);
         $.ajax({
-            url:"<?php echo base_url();?>ws/attribute/update",
+            url:"<?php echo base_url();?>ws/result_type/update",
             type:"POST",
             dataType:"JSON",
             data:data,
             processData: false,
             contentType: false,
             success:function(respond){
-                $("#editAttribute").modal("hide");
-                refresh(page);
+                if(respond["status"] == "SUCCESS"){
+                    $("#update_modal").modal("hide");
+                    refresh(page);
+                }
             }
         });
     }
-    function delete_attr(){
-        var attr_id = $("#attr_id_delete").val();
+    function remove(){
+        var id = $("#id_result_type_delete").val();
         $.ajax({
-            url:"<?php echo base_url();?>ws/attribute/delete/"+attr_id,
+            url:"<?php echo base_url();?>ws/result_type/delete/"+id,
             type:"DELETE",
             dataType:"JSON",
             success:function(respond){
-                $("#deleteAttribute").modal("hide");
+                $("#delete_modal").modal("hide");
                 refresh(page);
             }
         });
     }
 </script>
 <script>
-    function load_content(id_submit_attr){
-        $.ajax({
-            url:"<?php echo base_url();?>ws/attribute/get_attribute/"+id_submit_attr,
-            dataType:"JSON",
-            type:"GET",
-            success:function(respond){
-                $("#attr_name_edit").val(respond["attr"]["attr_name"]);
-                $("#attr_unit_edit").val(respond["attr"]["attr_unit"]);
-                $("#attr_id_edit").val(respond["attr"]["attr_id"]);
-                $("#attr_price_edit").val(respond["attr"]["attr_price"]);
-            }
-        });
+    function load_content(id){
+        var result_type = $("#result_type"+id).text();
+        $("#id_result_type_edit").val("");
+        $("#result_type_edit").val("");
+        $("#id_result_type_edit").val(id);
+        $("#result_type_edit").val(result_type);
     }
-    function load_delete_content(id_submit_attr){
-        $.ajax({
-            url:"<?php echo base_url();?>ws/attribute/get_attribute/"+id_submit_attr,
-            dataType:"JSON",
-            type:"GET",
-            success:function(respond){
-                $("#attr_name_delete").html(respond["attr"]["attr_name"]);
-                $("#attr_unit_delete").html(respond["attr"]["attr_unit"]);
-                $("#attr_id_delete").val(respond["attr"]["attr_id"]);
-            }
-        });
+    function load_delete_content(id){
+        var result_type = $("#result_type"+id).text();
+        $("#id_result_type_delete").val(id);
+        $("#result_type_delete").text(result_type);
     }
 </script>
